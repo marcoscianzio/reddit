@@ -1,9 +1,10 @@
 import { User } from "../entities/user";
 import { UsernamePassword } from "../inputs/user";
-import { Arg, Field, Mutation, ObjectType, Resolver } from "type-graphql";
+import { Arg, Ctx, Field, Mutation, ObjectType, Resolver } from "type-graphql";
 import argon2 from "argon2";
 import { userSchema } from "../validators/user";
 import { format } from "../validators/formatter";
+import { MyContext } from "src/types";
 
 @ObjectType()
 class PathError {
@@ -61,7 +62,8 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg("options") options: UsernamePassword
+    @Arg("options") options: UsernamePassword,
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     const user = await User.findOne({ username: options.username });
 
@@ -76,7 +78,10 @@ export class UserResolver {
       };
     }
 
-    const valid = await argon2.verify(user.password, options.password);
+    const valid = await argon2.verify(
+      user.password as string,
+      options.password
+    );
 
     if (!valid) {
       return {
@@ -88,6 +93,8 @@ export class UserResolver {
         ],
       };
     }
+
+    req.session.userId = user.id;
 
     return { user };
   }
