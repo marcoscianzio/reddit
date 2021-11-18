@@ -75,7 +75,7 @@ let UserResolver = class UserResolver {
         }).save();
         return { user };
     }
-    async login(options) {
+    async login(options, { req }) {
         const user = await user_1.User.findOne({ username: options.username });
         if (!user) {
             return {
@@ -98,6 +98,7 @@ let UserResolver = class UserResolver {
                 ],
             };
         }
+        req.session.userId = user.id;
         return { user };
     }
 };
@@ -111,8 +112,9 @@ __decorate([
 __decorate([
     (0, type_graphql_1.Mutation)(() => UserResponse),
     __param(0, (0, type_graphql_1.Arg)("options")),
+    __param(1, (0, type_graphql_1.Ctx)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_2.UsernamePassword]),
+    __metadata("design:paramtypes", [user_2.UsernamePassword, Object]),
     __metadata("design:returntype", Promise)
 ], UserResolver.prototype, "login", null);
 UserResolver = __decorate([
