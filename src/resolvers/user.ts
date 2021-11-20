@@ -1,6 +1,14 @@
 import { User } from "../entities/user";
 import { UsernamePassword } from "../inputs/user";
-import { Arg, Ctx, Field, Mutation, ObjectType, Resolver } from "type-graphql";
+import {
+  Arg,
+  Ctx,
+  Field,
+  Mutation,
+  ObjectType,
+  Query,
+  Resolver,
+} from "type-graphql";
 import argon2 from "argon2";
 import { userSchema } from "../validators/user";
 import { format } from "../validators/formatter";
@@ -26,6 +34,17 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Query(() => User, { nullable: true })
+  async Me(@Ctx() { req }: MyContext): Promise<User | undefined> {
+    if (!req.session.userId) {
+      return undefined;
+    } else {
+      const user = await User.findOne(req.session.userId);
+
+      return user;
+    }
+  }
+
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: UsernamePassword

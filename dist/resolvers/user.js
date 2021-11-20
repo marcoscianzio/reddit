@@ -49,6 +49,15 @@ UserResponse = __decorate([
     (0, type_graphql_1.ObjectType)()
 ], UserResponse);
 let UserResolver = class UserResolver {
+    async Me({ req }) {
+        if (!req.session.userId) {
+            return undefined;
+        }
+        else {
+            const user = await user_1.User.findOne(req.session.userId);
+            return user;
+        }
+    }
     async register(options) {
         try {
             console.log("a");
@@ -102,6 +111,13 @@ let UserResolver = class UserResolver {
         return { user };
     }
 };
+__decorate([
+    (0, type_graphql_1.Query)(() => user_1.User, { nullable: true }),
+    __param(0, (0, type_graphql_1.Ctx)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserResolver.prototype, "Me", null);
 __decorate([
     (0, type_graphql_1.Mutation)(() => UserResponse),
     __param(0, (0, type_graphql_1.Arg)("options")),
