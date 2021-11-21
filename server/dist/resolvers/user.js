@@ -58,7 +58,7 @@ let UserResolver = class UserResolver {
             return user;
         }
     }
-    async register(options) {
+    async register(options, { req }) {
         try {
             console.log("a");
             await user_3.userSchema.validate(options, { abortEarly: false });
@@ -82,6 +82,7 @@ let UserResolver = class UserResolver {
             username: options.username,
             password: hashedPassword,
         }).save();
+        req.session.userId = user.id;
         return { user };
     }
     async login(options, { req }) {
@@ -121,8 +122,9 @@ __decorate([
 __decorate([
     (0, type_graphql_1.Mutation)(() => UserResponse),
     __param(0, (0, type_graphql_1.Arg)("options")),
+    __param(1, (0, type_graphql_1.Ctx)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_2.UsernamePassword]),
+    __metadata("design:paramtypes", [user_2.UsernamePassword, Object]),
     __metadata("design:returntype", Promise)
 ], UserResolver.prototype, "register", null);
 __decorate([

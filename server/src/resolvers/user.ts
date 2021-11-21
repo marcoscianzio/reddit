@@ -47,7 +47,8 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async register(
-    @Arg("options") options: UsernamePassword
+    @Arg("options") options: UsernamePassword,
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     try {
       console.log("a");
@@ -75,6 +76,8 @@ export class UserResolver {
       username: options.username,
       password: hashedPassword,
     }).save();
+
+    req.session.userId = user.id;
 
     return { user };
   }
