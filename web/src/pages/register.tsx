@@ -17,7 +17,7 @@ const Register: React.FC<registerProps> = ({}) => {
   return (
     <Wrapper>
       <Formik
-        initialValues={{ username: "", password: "" }}
+        initialValues={{ username: "", password: "", email: "" }}
         onSubmit={async (values, { setErrors }) => {
           const response = await register({
             variables: {
@@ -46,6 +46,11 @@ const Register: React.FC<registerProps> = ({}) => {
               name="username"
               placeholder="Enter your username"
               label="Your username"
+            />
+            <InputField
+              name="email"
+              placeholder="Enter your email"
+              label="Your email"
             />
             <InputField
               name="password"
