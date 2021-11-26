@@ -16,6 +16,10 @@ let UsernamePassword = class UsernamePassword {
 __decorate([
     (0, type_graphql_1.Field)(() => String),
     __metadata("design:type", String)
+], UsernamePassword.prototype, "email", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(() => String),
+    __metadata("design:type", String)
 ], UsernamePassword.prototype, "username", void 0);
 __decorate([
     (0, type_graphql_1.Field)(() => String),
