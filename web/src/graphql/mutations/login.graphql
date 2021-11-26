@@ -1,0 +1,11 @@
+mutation Login($values: UsernamePassword!) {
+  login(options: $values) {
+    errors {
+      path
+      message
+    }
+    user {
+      ...RegularUser
+    }
+  }
+}
