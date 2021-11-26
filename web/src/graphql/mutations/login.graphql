@@ -1,5 +1,5 @@
-mutation Login($values: UsernamePassword!) {
-  login(options: $values) {
+mutation Login($password: String!, $usernameOrEmail: String!) {
+  login(password: $password, usernameOrEmail: $usernameOrEmail) {
     errors {
       path
       message
