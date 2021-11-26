@@ -7,7 +7,7 @@ import { buildSchema } from "type-graphql";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 
-import redis from "redis";
+import Redis from "ioredis";
 import session from "express-session";
 
 import connectRedis from "connect-redis";
@@ -19,7 +19,7 @@ const main = async () => {
   const app = express();
 
   const RedisStore = connectRedis(session);
-  const redisClient = redis.createClient();
+  const redis = new Redis();
 
   app.set("trust proxy", true);
 
@@ -34,7 +34,7 @@ const main = async () => {
     session({
       name: "qid",
       store: new RedisStore({
-        client: redisClient,
+        client: redis,
         disableTouch: true,
       }),
       cookie: {
@@ -54,7 +54,7 @@ const main = async () => {
       resolvers: [PostResolver, UserResolver],
       validate: false,
     }),
-    context: ({ req, res }): MyContext => ({ req, res }),
+    context: ({ req, res }): MyContext => ({ req, res, redis }),
   });
 
   await apolloServer.start();

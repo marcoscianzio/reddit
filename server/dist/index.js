@@ -11,14 +11,14 @@ const apollo_server_express_1 = require("apollo-server-express");
 const type_graphql_1 = require("type-graphql");
 const post_1 = require("./resolvers/post");
 const user_1 = require("./resolvers/user");
-const redis_1 = __importDefault(require("redis"));
+const ioredis_1 = __importDefault(require("ioredis"));
 const express_session_1 = __importDefault(require("express-session"));
 const connect_redis_1 = __importDefault(require("connect-redis"));
 const main = async () => {
     await (0, typeorm_1.createConnection)();
     const app = (0, express_1.default)();
     const RedisStore = (0, connect_redis_1.default)(express_session_1.default);
-    const redisClient = redis_1.default.createClient();
+    const redis = new ioredis_1.default();
     app.set("trust proxy", true);
     app.use((0, cors_1.default)({
         credentials: true,
@@ -27,7 +27,7 @@ const main = async () => {
     app.use((0, express_session_1.default)({
         name: "qid",
         store: new RedisStore({
-            client: redisClient,
+            client: redis,
             disableTouch: true,
         }),
         cookie: {
@@ -45,7 +45,7 @@ const main = async () => {
             resolvers: [post_1.PostResolver, user_1.UserResolver],
             validate: false,
         }),
-        context: ({ req, res }) => ({ req, res }),
+        context: ({ req, res }) => ({ req, res, redis }),
     });
     await apolloServer.start();
     apolloServer.applyMiddleware({
