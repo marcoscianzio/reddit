@@ -3,15 +3,15 @@ import { Stack, Button } from "@chakra-ui/react";
 import { Formik, Form } from "formik";
 import InputField from "../components/InputField";
 import Wrapper from "../components/Wrapper";
-import { MeDocument, MeQuery, useRegisterMutation } from "../generated/graphql";
+import { MeDocument, MeQuery, useLoginMutation } from "../generated/graphql";
 import { toErrorMap } from "../utils/toErrorMap";
 import { useRouter } from "next/router";
 import { withApollo } from "../utils/withApollo";
 
-interface registerProps {}
+interface loginProps {}
 
-const Register: React.FC<registerProps> = ({}) => {
-  const [register] = useRegisterMutation();
+const Login: React.FC<loginProps> = ({}) => {
+  const [Login] = useLoginMutation();
   const router = useRouter();
 
   return (
@@ -19,7 +19,7 @@ const Register: React.FC<registerProps> = ({}) => {
       <Formik
         initialValues={{ username: "", password: "" }}
         onSubmit={async (values, { setErrors }) => {
-          const response = await register({
+          const response = await Login({
             variables: {
               values,
             },
@@ -28,14 +28,14 @@ const Register: React.FC<registerProps> = ({}) => {
                 query: MeDocument,
                 data: {
                   __typename: "Query",
-                  Me: data?.register.user,
+                  Me: data?.login.user,
                 },
               });
             },
           });
-          if (response.data?.register.errors) {
-            setErrors(toErrorMap(response.data.register.errors));
-          } else if (response.data?.register.user) {
+          if (response.data?.login.errors) {
+            setErrors(toErrorMap(response.data.login.errors));
+          } else if (response.data?.login.user) {
             router.replace("/");
           }
         }}
@@ -57,11 +57,11 @@ const Register: React.FC<registerProps> = ({}) => {
               mt={4}
               disabled={!dirty}
               colorScheme="orange"
-              loadingText="Registering..."
+              loadingText="Logging..."
               isLoading={isSubmitting}
               type="submit"
             >
-              Register
+              Login
             </Button>
           </Stack>
         )}
@@ -70,4 +70,4 @@ const Register: React.FC<registerProps> = ({}) => {
   );
 };
 
-export default withApollo()(Register);
+export default withApollo()(Login);
