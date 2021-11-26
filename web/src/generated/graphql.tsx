@@ -21,6 +21,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   createPost: Post;
   deletePost: Scalars['Boolean'];
+  forgotPassword: Scalars['Boolean'];
   login: UserResponse;
   logout: Scalars['Boolean'];
   register: UserResponse;
@@ -38,8 +39,14 @@ export type MutationDeletePostArgs = {
 };
 
 
+export type MutationForgotPasswordArgs = {
+  email: Scalars['String'];
+};
+
+
 export type MutationLoginArgs = {
-  options: UsernamePassword;
+  password: Scalars['String'];
+  usernameOrEmail: Scalars['String'];
 };
 
 
@@ -82,6 +89,7 @@ export type QueryPostArgs = {
 export type User = {
   __typename?: 'User';
   created_at: Scalars['DateTime'];
+  email: Scalars['String'];
   id: Scalars['Int'];
   updated_at: Scalars['DateTime'];
   username: Scalars['String'];
@@ -94,18 +102,20 @@ export type UserResponse = {
 };
 
 export type UsernamePassword = {
+  email: Scalars['String'];
   password: Scalars['String'];
   username: Scalars['String'];
 };
 
-export type RegularUserFragment = { __typename?: 'User', id: number, username: string, created_at: any, updated_at: any };
+export type RegularUserFragment = { __typename?: 'User', id: number, email: string, username: string, created_at: any, updated_at: any };
 
 export type LoginMutationVariables = Exact<{
-  values: UsernamePassword;
+  password: Scalars['String'];
+  usernameOrEmail: Scalars['String'];
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'UserResponse', errors?: Array<{ __typename?: 'PathError', path: string, message: string }> | null | undefined, user?: { __typename?: 'User', id: number, username: string, created_at: any, updated_at: any } | null | undefined } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'UserResponse', errors?: Array<{ __typename?: 'PathError', path: string, message: string }> | null | undefined, user?: { __typename?: 'User', id: number, email: string, username: string, created_at: any, updated_at: any } | null | undefined } };
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -117,7 +127,7 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'UserResponse', errors?: Array<{ __typename?: 'PathError', path: string, message: string }> | null | undefined, user?: { __typename?: 'User', id: number, username: string, created_at: any, updated_at: any } | null | undefined } };
+export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'UserResponse', errors?: Array<{ __typename?: 'PathError', path: string, message: string }> | null | undefined, user?: { __typename?: 'User', id: number, email: string, username: string, created_at: any, updated_at: any } | null | undefined } };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -132,14 +142,15 @@ export type PostsQuery = { __typename?: 'Query', posts: Array<{ __typename?: 'Po
 export const RegularUserFragmentDoc = gql`
     fragment RegularUser on User {
   id
+  email
   username
   created_at
   updated_at
 }
     `;
 export const LoginDocument = gql`
-    mutation Login($values: UsernamePassword!) {
-  login(options: $values) {
+    mutation Login($password: String!, $usernameOrEmail: String!) {
+  login(password: $password, usernameOrEmail: $usernameOrEmail) {
     errors {
       path
       message
@@ -165,7 +176,8 @@ export type LoginMutationFn = Apollo.MutationFunction<LoginMutation, LoginMutati
  * @example
  * const [loginMutation, { data, loading, error }] = useLoginMutation({
  *   variables: {
- *      values: // value for 'values'
+ *      password: // value for 'password'
+ *      usernameOrEmail: // value for 'usernameOrEmail'
  *   },
  * });
  */
