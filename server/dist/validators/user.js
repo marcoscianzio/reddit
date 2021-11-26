@@ -30,6 +30,10 @@ const user = {
         .string()
         .required("This field is required")
         .min(2, "Min of 2 characters"),
+    email: yup
+        .string()
+        .email("Invalid email format")
+        .required("This field is required"),
 };
 exports.userSchema = yup.object().shape(Object.assign({}, user));
 //# sourceMappingURL=user.js.map
