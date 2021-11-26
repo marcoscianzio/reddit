@@ -12,7 +12,10 @@ import {
 import argon2 from "argon2";
 import { userSchema } from "../validators/user";
 import { format } from "../validators/formatter";
-import { MyContext } from "src/types";
+import { MyContext } from "../types";
+import { sendEmail } from "../utils/sendEmail";
+import { v4 } from "uuid";
+import { FORGET_PASSWORD_PREFIX } from "../constants";
 
 @ObjectType()
 class PathError {
@@ -34,6 +37,34 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg("email") email: string,
+    @Ctx() { req, redis }: MyContext
+  ) {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return false;
+    }
+
+    const token = v4();
+
+    redis.set(
+      FORGET_PASSWORD_PREFIX + token,
+      user.id,
+      "ex",
+      1000 * 60 * 60 * 24 * 3
+    );
+
+    await sendEmail(
+      email,
+      `<a href="http://localhost:3000/change-password/${token}">reset password</a>`
+    );
+
+    return true;
+  }
+
   @Query(() => User, { nullable: true })
   async Me(@Ctx() { req }: MyContext): Promise<User | undefined> {
     if (!req.session.userId) {
@@ -73,6 +104,7 @@ export class UserResolver {
     const hashedPassword = await argon2.hash(options.password);
 
     const user = await User.create({
+      email: options.email,
       username: options.username,
       password: hashedPassword,
     }).save();
@@ -84,26 +116,30 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg("options") options: UsernamePassword,
+    @Arg("usernameOrEmail") usernameOrEmail: string,
+    @Arg("password") password: string,
     @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
-    const user = await User.findOne({ username: options.username });
+    const user = await User.findOne(
+      usernameOrEmail.includes("@")
+        ? { email: usernameOrEmail }
+        : {
+            username: usernameOrEmail,
+          }
+    );
 
     if (!user) {
       return {
         errors: [
           {
             path: "username",
-            message: "Username incorrect",
+            message: "Username doesn't exist",
           },
         ],
       };
     }
 
-    const valid = await argon2.verify(
-      user.password as string,
-      options.password
-    );
+    const valid = await argon2.verify(user.password as string, password);
 
     if (!valid) {
       return {
