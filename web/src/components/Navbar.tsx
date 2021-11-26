@@ -3,11 +3,14 @@ import { Button, ButtonGroup } from "@chakra-ui/button";
 import { HStack, Text } from "@chakra-ui/layout";
 import NextLink from "next/link";
 import { useLogoutMutation, useMeQuery } from "../generated/graphql";
+import { isServer } from "../utils/isServer";
 
 interface NavbarProps {}
 
 const Navbar: React.FC<NavbarProps> = ({}) => {
-  const { data, loading } = useMeQuery();
+  const { data, loading } = useMeQuery({
+    skip: isServer(),
+  });
   const [logout, { loading: logoutLoading }] = useLogoutMutation();
   const apolloClient = useApolloClient();
 
