@@ -17,11 +17,12 @@ const Login: React.FC<loginProps> = ({}) => {
   return (
     <Wrapper>
       <Formik
-        initialValues={{ username: "", password: "" }}
+        initialValues={{ usernameOrEmail: "", password: "" }}
         onSubmit={async (values, { setErrors }) => {
           const response = await Login({
             variables: {
-              values,
+              usernameOrEmail: values.usernameOrEmail,
+              password: values.password,
             },
             update: (cache, { data }) => {
               cache.writeQuery<MeQuery>({
@@ -43,9 +44,9 @@ const Login: React.FC<loginProps> = ({}) => {
         {({ isSubmitting, dirty }) => (
           <Stack as={Form} spacing={4}>
             <InputField
-              name="username"
-              placeholder="Enter your username"
-              label="Your username"
+              name="usernameOrEmail"
+              placeholder="Enter your username or email"
+              label="Your username or email"
             />
             <InputField
               name="password"
