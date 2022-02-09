@@ -15,17 +15,107 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PostResolver = void 0;
 const post_1 = require("../entities/post");
 const type_graphql_1 = require("type-graphql");
+const isAuth_1 = require("../middlewares/isAuth");
+const typeorm_1 = require("typeorm");
+const updoot_1 = require("../entities/updoot");
+let PostInput = class PostInput {
+};
+__decorate([
+    (0, type_graphql_1.Field)(),
+    __metadata("design:type", String)
+], PostInput.prototype, "title", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(),
+    __metadata("design:type", String)
+], PostInput.prototype, "content", void 0);
+PostInput = __decorate([
+    (0, type_graphql_1.InputType)()
+], PostInput);
+let PaginatedPosts = class PaginatedPosts {
+};
+__decorate([
+    (0, type_graphql_1.Field)(() => [post_1.Post]),
+    __metadata("design:type", Array)
+], PaginatedPosts.prototype, "posts", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(),
+    __metadata("design:type", Boolean)
+], PaginatedPosts.prototype, "hasMore", void 0);
+PaginatedPosts = __decorate([
+    (0, type_graphql_1.ObjectType)()
+], PaginatedPosts);
 let PostResolver = class PostResolver {
-    async posts() {
-        const posts = await post_1.Post.find();
-        return posts;
+    textSnippet(root) {
+        return root.content.slice(0, 50);
+    }
+    async vote(postId, value, { req }) {
+        const { userId } = req.session;
+        const isUpdoot = value !== -1;
+        const realValue = isUpdoot ? 1 : -1;
+        const updoot = await updoot_1.Updoot.findOne({ postId, userId });
+        if (updoot && updoot.value !== realValue) {
+            await (0, typeorm_1.getConnection)()
+                .getRepository(updoot_1.Updoot)
+                .createQueryBuilder("updoot")
+                .update(updoot_1.Updoot)
+                .set({
+                value: realValue,
+            })
+                .where("postId = :postId", { postId })
+                .execute();
+            await (0, typeorm_1.getConnection)()
+                .getRepository(post_1.Post)
+                .createQueryBuilder("post")
+                .update(post_1.Post)
+                .set({
+                points: () => `points + ${realValue * 2}`,
+            })
+                .where("id = :postId", { postId })
+                .execute();
+        }
+        else if (!updoot) {
+            await updoot_1.Updoot.insert({
+                userId,
+                postId,
+                value: realValue,
+            });
+            await (0, typeorm_1.getConnection)()
+                .getRepository(post_1.Post)
+                .createQueryBuilder("post")
+                .update(post_1.Post)
+                .set({
+                points: () => `points + ${realValue}`,
+            })
+                .where("id = :postId", { postId })
+                .execute();
+        }
+        return true;
+    }
+    async posts(limit, cursor) {
+        const realLimit = Math.min(50, limit);
+        const realLimitPlusOne = realLimit + 1;
+        const query = (0, typeorm_1.getConnection)()
+            .getRepository(post_1.Post)
+            .createQueryBuilder("post")
+            .innerJoinAndSelect("post.author", "user", "user.id = post.authorId")
+            .orderBy("post.created_at", "DESC")
+            .take(realLimitPlusOne);
+        if (cursor) {
+            query.where("post.created_at < :cursor", {
+                cursor: new Date(parseInt(cursor)),
+            });
+        }
+        const posts = await query.getMany();
+        return {
+            posts: posts.slice(0, realLimit),
+            hasMore: posts.length == realLimitPlusOne,
+        };
     }
     async post(id) {
-        const post = await post_1.Post.findOne({ id });
-        return post;
+        return await post_1.Post.findOne({ id });
     }
-    async createPost(title) {
-        const post = await post_1.Post.create({ title }).save();
+    async createPost(values, { req }) {
+        const post = await post_1.Post.create(Object.assign(Object.assign({}, values), { authorId: req.session.userId })).save();
         return post;
     }
     async updatePost(id, title) {
@@ -47,9 +137,28 @@ let PostResolver = class PostResolver {
     }
 };
 __decorate([
-    (0, type_graphql_1.Query)(() => [post_1.Post]),
+    (0, type_graphql_1.FieldResolver)(() => String),
+    __param(0, (0, type_graphql_1.Root)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [post_1.Post]),
+    __metadata("design:returntype", void 0)
+], PostResolver.prototype, "textSnippet", null);
+__decorate([
+    (0, type_graphql_1.Mutation)(() => Boolean),
+    (0, type_graphql_1.UseMiddleware)(isAuth_1.isAuth),
+    __param(0, (0, type_graphql_1.Arg)("postId", () => type_graphql_1.Int)),
+    __param(1, (0, type_graphql_1.Arg)("value", () => type_graphql_1.Int)),
+    __param(2, (0, type_graphql_1.Ctx)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, Object]),
+    __metadata("design:returntype", Promise)
+], PostResolver.prototype, "vote", null);
+__decorate([
+    (0, type_graphql_1.Query)(() => PaginatedPosts),
+    __param(0, (0, type_graphql_1.Arg)("limit", () => type_graphql_1.Int)),
+    __param(1, (0, type_graphql_1.Arg)("cursor", () => String, { nullable: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], PostResolver.prototype, "posts", null);
 __decorate([
@@ -61,13 +170,16 @@ __decorate([
 ], PostResolver.prototype, "post", null);
 __decorate([
     (0, type_graphql_1.Mutation)(() => post_1.Post),
-    __param(0, (0, type_graphql_1.Arg)("title")),
+    (0, type_graphql_1.UseMiddleware)(isAuth_1.isAuth),
+    __param(0, (0, type_graphql_1.Arg)("values")),
+    __param(1, (0, type_graphql_1.Ctx)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [PostInput, Object]),
     __metadata("design:returntype", Promise)
 ], PostResolver.prototype, "createPost", null);
 __decorate([
     (0, type_graphql_1.Mutation)(() => post_1.Post, { nullable: true }),
+    (0, type_graphql_1.UseMiddleware)(isAuth_1.isAuth),
     __param(0, (0, type_graphql_1.Arg)("id")),
     __param(1, (0, type_graphql_1.Arg)("title", () => String, { nullable: true })),
     __metadata("design:type", Function),
@@ -76,13 +188,14 @@ __decorate([
 ], PostResolver.prototype, "updatePost", null);
 __decorate([
     (0, type_graphql_1.Mutation)(() => Boolean),
+    (0, type_graphql_1.UseMiddleware)(isAuth_1.isAuth),
     __param(0, (0, type_graphql_1.Arg)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], PostResolver.prototype, "deletePost", null);
 PostResolver = __decorate([
-    (0, type_graphql_1.Resolver)()
+    (0, type_graphql_1.Resolver)(post_1.Post)
 ], PostResolver);
 exports.PostResolver = PostResolver;
 //# sourceMappingURL=post.js.map

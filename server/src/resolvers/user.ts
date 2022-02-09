@@ -1,21 +1,24 @@
-import { User } from "../entities/user";
-import { UsernamePassword } from "../inputs/user";
+import argon2 from "argon2";
 import {
   Arg,
   Ctx,
   Field,
+  FieldResolver,
   Mutation,
   ObjectType,
   Query,
   Resolver,
+  Root,
 } from "type-graphql";
-import argon2 from "argon2";
-import { userSchema } from "../validators/user";
-import { format } from "../validators/formatter";
-import { MyContext } from "../types";
-import { sendEmail } from "../utils/sendEmail";
 import { v4 } from "uuid";
 import { FORGET_PASSWORD_PREFIX } from "../constants";
+import { User } from "../entities/user";
+import { UsernamePassword } from "../inputs/user";
+import { MyContext } from "../types";
+import { sendEmail } from "../utils/sendEmail";
+import { changePasswordSchema } from "../validators/changePassword";
+import { format } from "../validators/formatter";
+import { userSchema } from "../validators/user";
 
 @ObjectType()
 class PathError {
@@ -35,12 +38,78 @@ class UserResponse {
   user?: User;
 }
 
-@Resolver()
+@Resolver(User)
 export class UserResolver {
+  @FieldResolver(() => String)
+  email(@Root() user: User, @Ctx() { req }: MyContext) {
+    if (req.session.userId === user.id) {
+      return user.email;
+    }
+
+    return "";
+  }
+
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg("token") token: string,
+    @Arg("newPassword") newPassword: string,
+    @Ctx() { redis, req }: MyContext
+  ): Promise<UserResponse> {
+    try {
+      await changePasswordSchema.validate(
+        { newPassword },
+        { abortEarly: false }
+      );
+    } catch (error) {
+      return format(error);
+    }
+
+    const key = FORGET_PASSWORD_PREFIX + token;
+
+    const userId = await redis.get(key);
+
+    if (!userId) {
+      return {
+        errors: [
+          {
+            path: "token",
+            message: "Token invalid or expired",
+          },
+        ],
+      };
+    }
+
+    const user = await User.findOne({ id: parseInt(userId) });
+
+    if (!user) {
+      return {
+        errors: [
+          {
+            path: "token",
+            message: "User no longer exists",
+          },
+        ],
+      };
+    }
+
+    await User.update(
+      { id: parseInt(userId) },
+      { password: await argon2.hash(newPassword) }
+    );
+
+    redis.del(key);
+
+    req.session.userId = user.id;
+
+    return {
+      user,
+    };
+  }
+
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg("email") email: string,
-    @Ctx() { req, redis }: MyContext
+    @Ctx() { redis }: MyContext
   ) {
     const user = await User.findOne({ email });
 
@@ -82,7 +151,6 @@ export class UserResolver {
     @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     try {
-      console.log("a");
       await userSchema.validate(options, { abortEarly: false });
     } catch (error) {
       return format(error);
@@ -120,8 +188,10 @@ export class UserResolver {
     @Arg("password") password: string,
     @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
+    const isEmail = usernameOrEmail.includes("@");
+
     const user = await User.findOne(
-      usernameOrEmail.includes("@")
+      isEmail
         ? { email: usernameOrEmail }
         : {
             username: usernameOrEmail,
@@ -132,8 +202,8 @@ export class UserResolver {
       return {
         errors: [
           {
-            path: "username",
-            message: "Username doesn't exist",
+            path: "usernameOrEmail",
+            message: `${isEmail ? "Email" : "Username"} doesn't exist`,
           },
         ],
       };

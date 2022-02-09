@@ -4,7 +4,7 @@ interface WrapperProps {}
 
 const Wrapper: React.FC<WrapperProps> = ({ children }) => {
   return (
-    <Container maxW="container.xl" pt={8}>
+    <Container maxW="container.md" pt={8}>
       {children}
     </Container>
   );

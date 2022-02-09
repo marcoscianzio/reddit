@@ -1,6 +1,6 @@
 import { useApolloClient } from "@apollo/client";
 import { Button, ButtonGroup } from "@chakra-ui/button";
-import { HStack, Text } from "@chakra-ui/layout";
+import { HStack, Link, Text } from "@chakra-ui/layout";
 import NextLink from "next/link";
 import { useLogoutMutation, useMeQuery } from "../generated/graphql";
 import { isServer } from "../utils/isServer";
@@ -21,6 +21,9 @@ const Navbar: React.FC<NavbarProps> = ({}) => {
     body = (
       <HStack>
         <Text>{data.Me.username}</Text>
+        <NextLink href="/create-post">
+          <Link>Create new post</Link>
+        </NextLink>
         <Button
           onClick={async () => {
             await logout();
@@ -37,17 +40,24 @@ const Navbar: React.FC<NavbarProps> = ({}) => {
     body = (
       <ButtonGroup>
         <NextLink href="/login">
-          <Button>Iniciar sesión</Button>
+          <Button>Login</Button>
         </NextLink>
         <NextLink href="/register">
-          <Button>Registrate</Button>
+          <Button>Register</Button>
         </NextLink>
       </ButtonGroup>
     );
   }
 
   return (
-    <HStack bg="white" p={4} justify="space-between">
+    <HStack
+      position="sticky"
+      zIndex={1}
+      top={0}
+      bg="white"
+      p={4}
+      justify="space-between"
+    >
       <Text>Reddit</Text>
       {body}
     </HStack>

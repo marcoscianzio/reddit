@@ -14,6 +14,13 @@ const theme = extendTheme({
   colors: {
     black: "#16161D",
   },
+  components: {
+    Link: {
+      baseStyle: {
+        color: "blue.500",
+      },
+    },
+  },
   fonts,
   breakpoints,
   icons: {},

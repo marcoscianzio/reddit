@@ -1,11 +1,11 @@
-import { Stack, Button } from "@chakra-ui/react";
-
-import { Formik, Form } from "formik";
+import { Button, HStack, Link, Stack } from "@chakra-ui/react";
+import { Form, Formik } from "formik";
+import NextLink from "next/link";
+import { useRouter } from "next/router";
 import InputField from "../components/InputField";
 import Wrapper from "../components/Wrapper";
 import { MeDocument, MeQuery, useLoginMutation } from "../generated/graphql";
 import { toErrorMap } from "../utils/toErrorMap";
-import { useRouter } from "next/router";
 import { withApollo } from "../utils/withApollo";
 
 interface loginProps {}
@@ -37,7 +37,11 @@ const Login: React.FC<loginProps> = ({}) => {
           if (response.data?.login.errors) {
             setErrors(toErrorMap(response.data.login.errors));
           } else if (response.data?.login.user) {
-            router.replace("/");
+            if (typeof router.query.next === "string") {
+              router.push(router.query.next);
+            } else {
+              router.push("/");
+            }
           }
         }}
       >
@@ -64,6 +68,11 @@ const Login: React.FC<loginProps> = ({}) => {
             >
               Login
             </Button>
+            <HStack justify="center">
+              <NextLink href="/forgot-password">
+                <Link>Forget your password?</Link>
+              </NextLink>
+            </HStack>
           </Stack>
         )}
       </Formik>

@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Post = void 0;
 const type_graphql_1 = require("type-graphql");
 const typeorm_1 = require("typeorm");
+const updoot_1 = require("./updoot");
+const user_1 = require("./user");
 let Post = class Post extends typeorm_1.BaseEntity {
 };
 __decorate([
@@ -25,13 +27,41 @@ __decorate([
     __metadata("design:type", String)
 ], Post.prototype, "title", void 0);
 __decorate([
-    (0, type_graphql_1.Field)(() => Date),
+    (0, type_graphql_1.Field)(() => String),
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], Post.prototype, "content", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(() => type_graphql_1.Int),
+    (0, typeorm_1.Column)({ default: 0 }),
+    __metadata("design:type", Number)
+], Post.prototype, "points", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(() => type_graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Object)
+], Post.prototype, "voteStatus", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(() => type_graphql_1.Int),
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", Number)
+], Post.prototype, "authorId", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(),
+    (0, typeorm_1.ManyToOne)(() => user_1.User, (user) => user.posts),
+    __metadata("design:type", user_1.User)
+], Post.prototype, "author", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => updoot_1.Updoot, (updoot) => updoot.post),
+    __metadata("design:type", Array)
+], Post.prototype, "updoots", void 0);
+__decorate([
+    (0, type_graphql_1.Field)(() => String),
     (0, typeorm_1.Column)(),
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], Post.prototype, "created_at", void 0);
 __decorate([
-    (0, type_graphql_1.Field)(() => Date),
+    (0, type_graphql_1.Field)(() => String),
     (0, typeorm_1.Column)(),
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
