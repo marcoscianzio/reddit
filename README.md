@@ -11,6 +11,6 @@ yarn dev
 ```
 ### `web`
 ```
-cd wen
+cd web
 yarn dev
 ```
